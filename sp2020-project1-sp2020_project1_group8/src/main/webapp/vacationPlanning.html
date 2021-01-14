@@ -1,0 +1,305 @@
+  <!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Vacation Planning</title>
+<link rel="stylesheet" href="stylingSheet.css">
+</head>
+<body>
+	<h1> Vacation Planning </h1>
+	<div class="form">
+		<form action="/vacation_page.php">
+			<label for="vacation">Temperature </label>
+		  	<input type="text" class="searchBar"><br><br>
+		  	<input type="text" class="searchBar"><br><br> 
+		  	<input type="text" class="searchBar" id="tempMin"><br><br>
+		  	<input type="text" class="searchBar" id="tempMax"><br><br> 
+		  	<div class="custom-select" style="width:200px;">
+			  <select>
+			    <option value="0">Weather 1</option>
+			    <option value="1">Weather 2</option>
+			    <option value="2">Weather 3</option>
+			  <select id="precipType">
+			    <option value="Clear">Clear</option>
+			    <option value="Cloudy">Cloudy</option>
+			    <option value="Rainy">Rainy</option>
+			    <option value="Storming">Storming</option>
+			    <option value="Snowing">Snowing</option>
+			  </select>
+			</div>
+		  	<label for="num-results">Num Results </label>
+		  	<input type="text" class="searchBar"><br><br>
+		  	<input type="text" class="searchBar" id="numResults">
+		  	<label for="location">Location </label>
+		  	<input type="text" class="searchBar"><br><br>
+		  	<input type="button" onclick="showWeather()" value="Find My Vacation Spot" style="display: inline-block; text-align: right; float: left;"> 
+		  	<input type="text" class="searchBar" id="locIn"><br><br>
+		  	<input type="button" onclick="search()" value="Find My Vacation Spot" style="display: inline-block; text-align: right; float: left;"> 
+		  	<label class="switch">
+				<input type="checkbox">
+				<input type="checkbox" id="unitPicker">
+				<span class="slider round"></span>
+			</label>
+			</p>
+		</form>
+	</div>
+	<table style="width:100%" id = "weatherdata">
+	  <tr>
+	    <th>City</th>
+	    <th>Country</th>
+	    <th>Average Min Temp</th>
+	    <th>Average Max Temp</th>
+	    <th>Distance</th>
+	    <th>Favorite</th>
+	  </tr>
+	  <tr>
+	    <td>City</td>
+	    <td>Country</td>
+	    <td>8</td>
+	    <td>35</td>
+	    <td><button type="button">Add to Favorites</button></td>
+	  </tr>
+	  <tr>
+	    <td>City</td>
+	    <td>Country</td>
+	    <td>8</td>
+	    <td>35</td>
+	    <td><button type="button">Add to Favorites</button></td>
+	  </tr>
+	  <tr>
+	    <td>City</td>
+	    <td>Country</td>
+	    <td>8</td>
+	    <td>35</td>
+	    <td><button type="button">Add to Favorites</button></td>
+	  </tr>
+	  <tr>
+	    <td>City</td>
+	    <td>Country</td>
+	    <td>8</td>
+	    <td>35</td>
+	    <td><button type="button">Add to Favorites</button></td>
+	  </tr>
+	</table>
+
+	<div id="searchResults">
+		<p style="error" id="errorMessage"></p>
+		<table style="width:100%" id = "weatherTable">
+		  <tr>
+		    <th>City</th>
+		    <th>Country</th>
+		    <th>Average Min Temp</th>
+		    <th>Average Max Temp</th>
+		    <th>Distance</th>
+		    <th>Favorite</th>
+		  </tr>
+		</table>
+	</div>
+<div class="box3">
+<a href="url" class = "normalText">Home</a>
+<a href="url" class = "normalText">Vacation</a>
+@@ -80,12 +56,203 @@ <h1> Vacation Planning </h1>
+</html>
+
+<script>
+const errorElement = document.getElementById("errorMessage");
+const table = document.getElementById("weatherTable");
+const tempMinInput = document.getElementById("tempMin");
+const tempMaxInput = document.getElementById("tempMax");
+const precipTypeInput = document.getElementById("precipType");
+const numResultsInput = document.getElementById("numResults");
+const locInput = document.getElementById("locIn");
+const unitInput = document.getElementById("unitPicker");
+
+function showWeather() {
+	  var x = document.getElementById("weatherdata");
+	  var x = document.getElementById("weatherTable");
+	  if (x.style.display === "none") {
+	    x.style.display = "block";
+	  } else {
+	    x.style.display = "none";
+	  }
+}
+
+function isNum(str){
+	return /^\d+$/.test(str)
+}
+
+function hasInputError(){
+	if(tempMinInput.value == "" || !isNum(tempMinInput.value))
+		errorMessage("Minimum Temperature");
+	else if(tempMaxInput.value == "" || !isNum(tempMaxInput.value) || tempMaxInput.value < tempMinInput.value)
+		errorMessage("Maximum Temperature");
+	else if(numResultsInput.value == "" || !isNum(numResultsInput.value))
+		errorMessage("Num Results");
+	else if(locInput.value == "" || (isNum(locInput.value) && locInput.value.length != 5))
+		errorMessage("Location");
+	else
+		return false;
+
+	return true;
+}
+
+function hide(element){
+	element.style.visibility = "hidden";
+}
+
+function show(element){
+	element.style.visibility = "visible";
+}
+
+function errorMessage(field){
+	setMessage("Illegal value for input <b>" + field + "</b>");
+}
+
+function setMessage(message){
+	errorElement.innerHTML = message;
+	hide(table);
+	show(errorElement);
+}
+
+function formatLocation(loc){
+	return loc.replace(" ", "+").replace("/", "+");
+}
+
+function search(){
+	if(hasInputError()){
+		return false;
+	}
+
+	var loc = formatLocation(locInput.value);
+	var minTemp = tempMinInput.value;
+	var maxTemp = tempMaxInput.value;
+	var results = numResultsInput.value;
+	var precipType = precipTypeInput.value;
+	var unit = unitInput.value == "on" ? "Fahrenheit" : "Celsius";
+
+	var requestUrl = "/locationsbyweather?loc=" + loc + 
+			"&max=" + maxTemp +
+			"&min=" + minTemp + 
+			"&precip=" + precipType + 
+			"&results=" + results + 
+			"&unit=" + unit;
+
+    var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+	    	var response = JSON.parse(this.responseText);
+	    	console.log(response);
+	    	populateTable(response);
+	    }
+		else if(this.status == 400){
+			setMessage("No locations found.")
+		}
+	};
+
+	xhttp.open("GET", requestUrl, true);
+	xhttp.send();
+}
+
+function populateTable(response){
+	var rows = []
+	for(result of response){
+		rows.push(new row(result.city, result.country, result.avgMinTemp, result.avgMaxTemp, 
+				result.distance, result.isFavorite));
+	}
+
+	clearTable();
+
+	for(const singleRow of rows){
+		addRow(singleRow);
+	}
+
+	hide(errorElement);
+	show(table);
+}
+
+function row(city, country, minTemp, maxTemp, distance, isFavorite){
+	this.city = city;
+	this.country = country;
+	this.minTemp = minTemp;
+	this.maxTemp = maxTemp;
+	this.distance = distance;
+	this.isFavorite = isFavorite;
+}
+
+function clearTable(){
+	for(var i = table.rows.length - 1; i > 0; i -= 1){
+		table.deleteRow(i);
+	}
+}
+
+function addRow(row){
+	var rowElement = table.insertRow(-1);
+	rowElement.insertCell(0).innerHTML = row.city;
+	rowElement.insertCell(1).innerHTML = row.country;
+	rowElement.insertCell(2).innerHTML = row.minTemp;
+	rowElement.insertCell(3).innerHTML = row.maxTemp;
+	rowElement.insertCell(4).innerHTML = row.distance;
+
+	var favBtn = document.createElement("BUTTON"); 
+	if(row.isFavorite){
+		favBtn.onclick = createRemoveFavorite(favBtn, row.city + "," + row.country);
+		favBtn.innerHTML = "";
+		favBtn.classList.remove("addFav");
+		favBtn.classList.add("removeFav");
+		favBtn.appendChild(document.createTextNode('Remove Favorite'));
+	}
+	else{
+		favBtn.onclick = createAddFavorite(favBtn, row.city + "," + row.country);
+		favBtn.innerHTML = "";
+		favBtn.classList.remove("removeFav");
+		favBtn.classList.add("addFav");
+		favBtn.appendChild(document.createTextNode('Add Favorite'));
+	}
+
+	rowElement.insertCell(5).appendChild(favBtn);
+}
+
+function sortRows(){
+
+}
+
+function createAddFavorite(btn, loc){
+	return function(){
+		var requestUrl = "/favorites"
+
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				btn.innerHTML = "";
+				btn.classList.remove("removeFav");
+		    	btn.classList.add("addFav");
+		    	btn.onclick = createRemoveFavorite(btn, loc);
+		    	btn.appendChild(document.createTextNode('Remove Favorite'));
+		    }
+		};
+
+		xhttp.open("POST", requestUrl, true);
+		xhttp.setRequestHeader("Content-type", "text/plain");
+		xhttp.send(loc);
+	};
+}
+
+function createRemoveFavorite(btn, loc){
+	return function(){
+		var requestUrl = "/favorites"
+
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				btn.innerHTML = "";
+		    	btn.classList.remove("addFav");
+		    	btn.classList.add("removeFav");
+		    	btn.onclick = createAddFavorite(btn, loc);
+		    	btn.appendChild(document.createTextNode('Add Favorite'));
+		    }
+		};
+
+		xhttp.open("DELETE", requestUrl, true);
+		xhttp.setRequestHeader("Content-type", "text/plain");
+		xhttp.send(loc);
+	};
+}
+
+</script> 

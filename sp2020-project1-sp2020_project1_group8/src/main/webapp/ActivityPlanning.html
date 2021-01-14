@@ -1,0 +1,354 @@
+<!DOCTYPE HTML>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title> Activity Planning </title>
+	<link rel="stylesheet" type="text/css" href="stylingSheet.css"> 
+</head>
+<html>
+	<body>
+		<h1> Activity Planning </h1>
+		<div class="left-container">
+			<div class="form" id="submitForm">
+				<form action="/action_page.php">
+					<label for="activity" id="activitySearch">Activity </label>
+					<div class="autocomplete" style="width:300px;">
+				  		<input type="text" class="searchBar" id="act">
+				  	</div>
+				  	<br><br>
+				  	<label for="num-results">Num Results </label>
+				  	<input type="text" class="searchBar"  id="res">
+				  	<br><br><br>
+				  	<label for="location">Location </label>
+				  	<input type="text" class="searchBar"  id="loc">
+				  	<br><br><br>
+				  	
+				  	<input type="button" onclick="search()" value="Find My Activity Spot" id="FindMyActivitySpotButton">
+				  	<label class="switch">
+						<input type="checkbox" id="togBtn" value="false">
+						<span class="slider round" style="float: left"></span>
+					</label>
+					
+				</form>
+			</div>
+		</div>
+		<div class="left-container" id="right-table">
+			<p style="error" id="errorMessage"></p>
+			<table style="width:100%" id = "weatherTable">
+				<thead>
+					<tr>
+						<th id="cityCol">City</th>
+						<th id="countryCol">Country</th>
+						<th id="tempCol">Current Temp</th>
+						<th onclick="reverseRows()" id="distCol">Distance</th>
+						<th id="favCol">Favorite</th>
+				 	</tr>
+				 </thead>
+				 <tbody>
+				 </tbody>
+			</table>
+			<div id="error" style="display:none;">illegal value for input </div>
+		</div>
+		<div class="navbar">
+			<ul>
+				<li><a href="/index.html"><img src="nav-bar-icons/home.png" alt="Home" height="42" width="42"><p>Home</p></a></li>
+				<li><a href="/vacationPlanning.html"><img src="nav-bar-icons/umbrella.png" alt="Vacation" height="42" width="42"><p>Vacation</p></a></li>
+				<li><a href="/ActivityPlanning.html"><img src="nav-bar-icons/soccer.png" alt="Activity" height="42" width="42"><p>Activity</p></a></li>
+				<li><a href="/WeatherAnalysis.html"><img src="nav-bar-icons/calculator.png" alt="Analysis" height="42" width="42"><p>Analysis</p></a></li>
+			</ul>
+		</div>
+		<script
+		  src="https://code.jquery.com/jquery-3.4.1.min.js"
+		  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+		  crossorigin="anonymous">
+		</script>
+		
+	</body>
+	<script>
+		const errorElement = document.getElementById("errorMessage");
+		const table = document.getElementById("weatherTable");
+		const activityInput = document.getElementById("act");
+		const numResultsInput = document.getElementById("res");
+		const locInput = document.getElementById("loc");
+		const unitInput = document.getElementById("togBtn");
+		
+		function isNum(str){
+			return /^\d+$/.test(str)
+		}
+
+		function hasInputError(){
+			if(activityInput.value == "")
+				errorMessage("Activity");
+			else if(numResultsInput.value == "" || !isNum(numResultsInput.value))
+				errorMessage("Num Results");
+			else if(locInput.value == "" || (isNum(locInput.value) && locInput.value.length != 5))
+				errorMessage("Location");
+			else
+				return false;
+			
+			return true;
+		}
+
+		function hide(element){
+			element.style.visibility = "hidden";
+		}
+
+		function show(element){
+			element.style.visibility = "visible";
+		}
+
+		function errorMessage(field){
+			setMessage("Illegal value for input <b>" + field + "</b>");
+		}
+
+		function setMessage(message){
+			errorElement.innerHTML = message;
+			hide(table);
+			show(errorElement);
+		}
+		function formatLocation(loc){
+			return loc.replace(" ", "+").replace("/", "+");
+		}
+
+		function search(){
+			if(hasInputError()){
+				return false;
+			}
+			
+			var loc = formatLocation(locInput.value);
+			var activity = activityInput.value;
+			var results = numResultsInput.value;
+			var unit = unitInput.value == "on" ? "Celsius" : "Fahrenheit";
+			
+			var requestUrl = "/locationsbyactivity?loc=" + loc + 
+					"&activity=" + activity +
+					"&results=" + results + 
+					"&unit=" + unit;
+			
+		    var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+			    	var response = JSON.parse(this.responseText);
+			    	populateTable(response);
+			    }
+				else if(this.status == 400){
+					setMessage("No locations found.")
+				}
+			};
+			
+			xhttp.open("GET", requestUrl, true);
+			xhttp.send();
+		}
+		var rows = []
+
+		function populateTable(response){
+			rows = []
+			for(result of response){
+				rows.push(new row(result.city, result.country, result.currentTemp, 
+						result.distance, result.isFavorite));
+			}
+			
+			rows.sort((a, b) => (a.distance > b.distance) ? 1 : -1);
+			
+			setRows(rows);
+		}
+
+		function setRows(rows){
+			clearTable();
+			
+			for(const row of rows){
+				addRow(row);
+			}
+			
+			hide(errorElement);
+			show(table);
+		}
+
+		function reverseRows(){
+			rows.reverse();
+			setRows(rows);
+		}
+
+		function row(city, country, temp, distance, isFavorite){
+			this.city = city;
+			this.country = country;
+			this.temp = temp;
+			this.distance = distance;
+			this.isFavorite = isFavorite;
+		}
+
+		function clearTable(){
+			for(var i = table.rows.length - 1; i > 0; i -= 1){
+				table.deleteRow(i);
+			}
+		}
+
+		function addRow(row){
+			var rowElement = table.insertRow(-1);
+			rowElement.insertCell(0).innerHTML = row.city;
+			rowElement.insertCell(1).innerHTML = row.country;
+			rowElement.insertCell(2).innerHTML = row.temp;
+			rowElement.insertCell(3).innerHTML = row.distance;
+			
+			var favBtn = document.createElement("BUTTON"); 
+			if(row.isFavorite){
+				favBtn.onclick = createRemoveFavorite(favBtn, row.city + "," + row.country);
+				favBtn.innerHTML = "";
+				favBtn.classList.remove("addFav");
+				favBtn.classList.add("removeFav");
+				favBtn.appendChild(document.createTextNode('Remove Favorite'));
+			}
+			else{
+				favBtn.onclick = createAddFavorite(favBtn, row.city + "," + row.country);
+				favBtn.innerHTML = "";
+				favBtn.classList.remove("removeFav");
+				favBtn.classList.add("addFav");
+				favBtn.appendChild(document.createTextNode('Add Favorite'));
+			}
+			
+			rowElement.insertCell(4).appendChild(favBtn);
+		}
+
+		function createAddFavorite(btn, loc){
+			return function(){
+				var requestUrl = "/favorites"
+
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+					if (this.readyState == 4 && this.status == 200) {
+						btn.innerHTML = "";
+						btn.classList.remove("removeFav");
+				    	btn.classList.add("addFav");
+				    	btn.onclick = createRemoveFavorite(btn, loc);
+				    	btn.appendChild(document.createTextNode('Remove Favorite'));
+				    }
+				};
+				
+				xhttp.open("POST", requestUrl, true);
+				xhttp.setRequestHeader("Content-type", "text/plain");
+				xhttp.send(loc);
+			};
+		}
+
+		function createRemoveFavorite(btn, loc){
+			return function(){
+				var requestUrl = "/favorites"
+
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+					if (this.readyState == 4 && this.status == 200) {
+						btn.innerHTML = "";
+				    	btn.classList.remove("addFav");
+				    	btn.classList.add("removeFav");
+				    	btn.onclick = createAddFavorite(btn, loc);
+				    	btn.appendChild(document.createTextNode('Add Favorite'));
+				    }
+				};
+				
+				xhttp.open("DELETE", requestUrl, true);
+				xhttp.setRequestHeader("Content-type", "text/plain");
+				xhttp.send(loc);
+			};
+		}
+			
+		function autocomplete(inp, arr) {
+			var currentFocus;
+			/*execute a function when someone writes in the text field:*/
+			inp.addEventListener("input", function(e) {
+		    	var a, b, i, val = this.value;
+		    	/*close any already open lists of autocompleted values*/
+		    	closeAllLists();
+		    	if (!val) { return false;}
+		    	currentFocus = -1;
+		    	/*create a DIV element that will contain the items (values):*/
+		    	a = document.createElement("DIV");
+		    	a.setAttribute("id", this.id + "autocomplete-list");
+		    	a.setAttribute("class", "autocomplete-items");
+		    	/*append the DIV element as a child of the autocomplete container:*/
+		    	this.parentNode.appendChild(a);
+		    	/*for each item in the array...*/
+		    	for (i = 0; i < arr.length; i++) {
+		        	/*check if the item starts with the same letters as the text field value:*/
+		        	if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+		        	/*create a DIV element for each matching element:*/
+		        	b = document.createElement("DIV");
+		        	/*make the matching letters bold:*/
+		        	b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+		        b.innerHTML += arr[i].substr(val.length);
+		          /*insert a input field that will hold the current array item's value:*/
+		          b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+		          /*execute a function when someone clicks on the item value (DIV element):*/
+		          b.addEventListener("click", function(e) {
+		              /*insert the value for the autocomplete text field:*/
+		              inp.value = this.getElementsByTagName("input")[0].value;
+		              /*close the list of autocompleted values,
+		              (or any other open lists of autocompleted values:*/
+		              closeAllLists();
+		          });
+		          a.appendChild(b);
+		        }
+		      }
+		  });
+		  /*execute a function presses a key on the keyboard:*/
+		  inp.addEventListener("keydown", function(e) {
+		      var x = document.getElementById(this.id + "autocomplete-list");
+		      if (x) x = x.getElementsByTagName("div");
+		      if (e.keyCode == 40) {
+		        /*If the arrow DOWN key is pressed,
+		        increase the currentFocus variable:*/
+		        currentFocus++;
+		        /*and and make the current item more visible:*/
+		        addActive(x);
+		      } else if (e.keyCode == 38) { //up
+		        /*If the arrow UP key is pressed,
+		        decrease the currentFocus variable:*/
+		        currentFocus--;
+		        /*and and make the current item more visible:*/
+		        addActive(x);
+		      } else if (e.keyCode == 13) {
+		        /*If the ENTER key is pressed, prevent the form from being submitted,*/
+		        e.preventDefault();
+		        if (currentFocus > -1) {
+		          /*and simulate a click on the "active" item:*/
+		          if (x) x[currentFocus].click();
+		        }
+		      }
+		  });
+		  function addActive(x) {
+		    /*a function to classify an item as "active":*/
+		    if (!x) return false;
+		    /*start by removing the "active" class on all items:*/
+		    removeActive(x);
+		    if (currentFocus >= x.length) currentFocus = 0;
+		    if (currentFocus < 0) currentFocus = (x.length - 1);
+		    /*add class "autocomplete-active":*/
+		    x[currentFocus].classList.add("autocomplete-active");
+		  }
+		  function removeActive(x) {
+		    /*a function to remove the "active" class from all autocomplete items:*/
+		    for (var i = 0; i < x.length; i++) {
+		      x[i].classList.remove("autocomplete-active");
+		    }
+		  }
+		  function closeAllLists(elmnt) {
+		    /*close all autocomplete lists in the document,
+		    except the one passed as an argument:*/
+		    var x = document.getElementsByClassName("autocomplete-items");
+		    for (var i = 0; i < x.length; i++) {
+		      if (elmnt != x[i] && elmnt != inp) {
+		        x[i].parentNode.removeChild(x[i]);
+		      }
+		    }
+		  }
+		  /*execute a function when someone clicks in the document:*/
+		  document.addEventListener("click", function (e) {
+		      closeAllLists(e.target);
+		  });
+		}
+		
+		var countries = ["Afghanistan","Albania","Algeria","Andorra","Angola","Anguilla","Antigua & Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bosnia & Herzegovina","Botswana","Brazil","British Virgin Islands","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Cayman Islands","Central Arfrican Republic","Chad","Chile","China","Colombia","Congo","Cook Islands","Costa Rica","Cote D Ivoire","Croatia","Cuba","Curacao","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Ethiopia","Falkland Islands","Faroe Islands","Fiji","Finland","France","French Polynesia","French West Indies","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar","Greece","Greenland","Grenada","Guam","Guatemala","Guernsey","Guinea","Guinea Bissau","Guyana","Haiti","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Isle of Man","Israel","Italy","Jamaica","Japan","Jersey","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macau","Macedonia","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar","Namibia","Nauro","Nepal","Netherlands","Netherlands Antilles","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria","North Korea","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Puerto Rico","Qatar","Reunion","Romania","Russia","Rwanda","Saint Pierre & Miquelon","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","St Kitts & Nevis","St Lucia","St Vincent","Sudan","Suriname","Swaziland","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor L'Este","Togo","Tonga","Trinidad & Tobago","Tunisia","Turkey","Turkmenistan","Turks & Caicos","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States of America","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Virgin Islands (US)","Yemen","Zambia","Zimbabwe"];
+		
+		/*initiate the autocomplete function on the "myInput" element, and pass along the countries array as possible autocomplete values:*/
+		autocomplete(document.getElementById("act"), countries);
+			
+		</script>
+</html>

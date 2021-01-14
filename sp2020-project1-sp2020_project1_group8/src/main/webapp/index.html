@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Home</title>
+<link rel="stylesheet" href="maincss.css">
+</head>
+<body>
+	<div id = "weatherinfo">
+		<div id = "weatherdata">
+			<label class = "normalText" id = "date"></label>
+			<h1><label id = "location"></label></h1>
+			<img id="weatherIcon">
+			<label class = "normalText" id = "weather"></label>
+			<label class = "normalText" id = "description"></label>
+		</div>
+		<div id = "search">
+			<div class = "form" method="get">
+				<div class="box">
+					<input type="text" class="searchBar" id= "locationInput"  name="searchByLocationBar" placeholder="Enter location (city or zip)" autofocus><br><br>
+					<div class="box2">
+						<label class = "normalText">°C</label>
+						<label class="switch">
+						  <input type="checkbox" id = "unit">
+						  <span class="slider round"></span>
+						</label>
+						<label class = "normalText">°F</label>
+						<button id="mainSearchBtn" class = "weatherButton" type="button" onclick = "return validateForm()">Show me the Weather</button><br><br>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="navbar">
+			<ul>
+				<li><a href="/index.html"><img src="nav-bar-icons/home.png" alt="Home" height="42" width="42"><p>Home</p></a></li>
+				<li><a href="/vacationPlanning.html"><img src="nav-bar-icons/umbrella.png" alt="Vacation" height="42" width="42"><p>Vacation</p></a></li>
+				<li><a href="/ActivityPlanning.html"><img src="nav-bar-icons/soccer.png" alt="Activity" height="42" width="42"><p>Activity</p></a></li>
+				<li><a href="/WeatherAnalysis.html"><img src="nav-bar-icons/calculator.png" alt="Analysis" height="42" width="42"><p>Analysis</p></a></li>
+			</ul>
+		</div>
+	</div>
+</body>
+<script>
+		
+		function validateForm() {
+		    var enteredLocation = document.getElementById("locationInput").value;
+		    var enteredUnit = document.getElementById("unit").value == "on" ? "Fahrenheit" : "Celsius";
+			
+		    if(enteredLocation == ""){
+		    	displayError();
+		    	return false;
+		    }
+		    
+		    var requestUrl = "/simpleweather?loc=" + enteredLocation + "&unit=" + enteredUnit;
+		    var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+			    	var response = JSON.parse(this.responseText);
+			    	console.log(response);
+			    	updateUI(response);
+			    }
+				else if(this.status == 400){
+					displayError();
+				}
+			};
+			
+			xhttp.open("GET", requestUrl, true);
+			xhttp.send();
+		
+		}
+		
+		function updateUI(response){
+			var locationName = response.city + ", " + response.country;
+			var temp = response.currentTemp;
+			var desc = response.weather;
+			var x = document.getElementById("weatherdata");
+			
+			document.getElementById("date").innerHTML = (new Date()).toDateString()
+			document.getElementById("location").innerHTML = locationName;
+			document.getElementById("weather").innerHTML = temp;
+			document.getElementById("description").innerHTML = desc;
+			
+			var img = document.getElementById("weatherIcon");
+			img.src = response.weatherGraphicStatic;
+			img.onmouseover = setSrc(img, response.weatherGraphicAnimate);
+			img.onmouseout = setSrc(img, response.weatherGraphicStatic);
+		}
+		
+		function setSrc(img, src){
+			return function(){
+				img.src = src;
+			};
+		}
+		
+		function displayError(){
+			var weatherDisplay = document.getElementById("weatherdata");
+			weatherDisplay.innerHTML = "<p class=\"error\">No weather data found.</p>"
+		}
+</script>
+</html>

@@ -1,0 +1,116 @@
+button{
+  	display: inline-block;
+	background-color: #C0C0C0;
+	border-radius: 10px;
+	border: 4px double #191970;
+	text-align: center;
+	font-size: 8px;
+	padding: 20px;
+	width: 120px;
+	height: 5px;
+	-webkit-transition: all 0.5s;
+	-moz-transition: all 0.5s;
+	-o-transition: all 0.5s;
+	transition: all 0.5s;
+	cursor: pointer;
+	margin: 2px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  width: 36px;
+  width: 40px;
+  height: 25px;
+}
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  background-color: #2196F3;
+  -webkit-transition: .4s;
+  transition: .4s;
+  float: left
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+input:checked + .slider {
+  background-color: #2196F3;
+  background-color: #;
+}
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+input:checked + .slider:before {
+  -webkit-transform: translateX(16px);
+  -ms-transform: translateX(16px);
+  transform: translateX(16px);
+}
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+.slider.round:before {
+  border-radius: 50%;
+}
+
+#weatherinfo{
+height: 100vh;
+	display: flex;
+  justify-content: center; /* center horizontally */
+  align-items: center; /* center vertically */
+}
+#weatherdata{
+	z-index: 2; 
+	position: absolute; 
+	top: 15%; 
+	left: 42%;
+}
+#search{
+	position: relative;
+	z-index: 1; 
+	top: 10%; 
+}
+#locationInput{
+	text-align: center;
+	width: 100%;
+}
+li{
+	display: inline;
+}
+.navbar {
+  overflow: hidden;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+.navbar a {
+  float: left;
+  display: block;
+  color: black;
+  text-align: center;
+  text-decoration: none;
+  font-size: 17px;
+  width: 25%;
+}

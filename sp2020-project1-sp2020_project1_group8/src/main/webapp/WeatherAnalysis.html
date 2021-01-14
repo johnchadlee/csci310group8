@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<head>
+<meta charset="UTF-8">
+<title>Weather Analysis</title>
+<link rel="stylesheet" href="stylingSheet.css">
+<style>
+table {
+  border-collapse: collapse;
+  width: 30%;
+}
+th, td {
+  text-align: left;
+  padding: 8px;
+}
+tr:nth-child(even) {background-color: #f2f2f2;}
+h1 {
+   text-align:center;
+}
+body{
+	background-color: #FFFAFA;
+}
+.button{
+  background-color: #FF6347;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+.current{
+  position: absolute;
+  left: 0;
+  top: 10%;
+  width: 100%;
+  text-align: center;
+  font-size: 18px;
+}
+.info{
+  position: relative;
+  top: 10%;
+  width: 100%;
+  left: 10%;
+  font-size: 24px;
+  text-align: center;
+  display : block;
+}
+
+/* Image carousal styling */
+.slide {display: none}
+.carousal{
+  max-width: 400px;
+  position: absolute;
+  margin: auto;
+  top: 9px;
+  right: 20px;
+}
+#curve_chart{
+	margin: auto;
+	margin-left: auto;
+    margin-right: auto;
+    padding-top: 10px;
+    display: block;
+}
+#forecast{
+	display : inline-block;
+}
+.navbar{
+	position: relative;
+	display: block;
+}
+</style>
+<!-- Google curve chart-->
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+  google.charts.load('current', {'packages':['corechart']});
+</script>
+
+</head>
+<html>
+<body>
+
+<h1>Weather Analysis</h1>
+<!-- Favorite cities table-->
+<div style="overflow-y:auto;">
+  <table id = "favCities">
+  <thead>
+  <tr>
+   <th>Favorite Cities</th>
+   </tr>
+   </thead>
+   <tbody>
+   </tbody>
+  </table>
+  </div>
+  <div>
+  <input type="button" class="button" value="Remove From Favorites"/>    
+  </div>
+  
+  <label class="switch">
+		<input type="checkbox" id="unitPicker">
+		<span class="slider round"></span>
+  </label>
+<div>
+<!-- Current weather data -->
+<div id = "current">
+	<label class = "normalText" id = "date"></label>
+	<h1><label id = "location"></label></h1>
+	<img id="weatherIcon">
+	<label class = "normalText" id = "weather"></label>
+	<label class = "normalText" id = "description"></label>
+</div>
+<!-- 5 day forecast table-->
+<table id="forecast">
+</table>
+</div>
+<div class="carousal" id="carousel">
+  <div class="slide" id="slide1">
+  </div>
+  <div class="slide" id="slide2">
+  </div>
+  <div class="slide" id="slide3">
+  </div>
+</div>
+<div id="curve_chart" style="width: 800px; height: 300px"></div>
+<div class="navbar">
+	<ul>
+		<li><a href="index.html"><img src="nav-bar-icons/home.png" alt="Home" height="42" width="42"><p>Home</p></a></li>
+		<li><a href="vacationPlanning.html"><img src="nav-bar-icons/umbrella.png" alt="Vacation" height="42" width="42"><p>Vacation</p></a></li>
+		<li><a href="ActivityPlanning.html"><img src="nav-bar-icons/soccer.png" alt="Activity" height="42" width="42"><p>Activity</p></a></li>
+		<li><a href="WeatherAnalysis.html"><img src="nav-bar-icons/calculator.png" alt="Analysis" height="42" width="42"><p>Analysis</p></a></li>
+	</ul>
+</div>
+<script
+		  src="https://code.jquery.com/jquery-3.4.1.min.js"
+		  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+		  crossorigin="anonymous">
+</script>
+<script>
+	const unitInput = document.getElementById("unitPicker");
+	const forecastTable = document.getElementById("forecast");
+	const carousel = document.getElementById("carousel");
+	const slides = [document.getElementById("slide1"), document.getElementById("slide2"), document.getElementById("slide3")];
+	const favorites = document.getElementById("favCities");
+	
+	var currentFavorite;
+	
+	populateFavorites();
+	
+	function favButton(element, loc){
+		this.element = element;
+		this.loc = loc;
+	}
+	
+	function populateFavorites(){
+		var requestUrl = "/favorites"
+
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+		    	var response = JSON.parse(this.responseText);
+		    	for(fav of response){
+		    		addFavorite(fav);
+		    	}
+		    }
+			else if(this.status == 400){
+				setMessage("No locations found.")
+			}
+		};
+		
+		xhttp.open("GET", requestUrl, true);
+		xhttp.send();
+	}
+	
+	function addFavorite(loc){
+		var row = favorites.insertRow(-1);
+		var cell = row.insertCell(0);
+		cell.innerHTML = loc;
+		cell.onclick = function(){
+			selectFavorite(loc);
+		};
+		
+	}
+	
+	function selectFavorite(loc){
+		var unit = unitInput.value == "on" ? "Fahrenheit" : "Celsius";
+		
+		var requestUrl = "/detailedweather?loc=" + loc + 
+				"&unit=" + unit;
+		
+	    var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+		    	var response = JSON.parse(this.responseText);
+		    	fillForecast(response.dailyForecasts);
+		    	fillCarousel(response.placeImages);
+		    	displayCurrent(response.weatherLocation);
+		    	drawHistChart(response.monthTemps);
+		    }
+			else if(this.status == 400){
+				setMessage("No locations found.")
+			}
+		};
+		
+		xhttp.open("GET", requestUrl, true);
+		xhttp.send();
+	}
+
+	function clearTable(){
+		for(var i = forecastTable.rows.length - 1; i >= 0; i -= 1){
+			forecastTable.deleteRow(i);
+		}
+	}
+	
+	function fillForecast(forecast){
+		clearTable();
+		
+		var icons = forecastTable.insertRow(-1);
+		var dates = forecastTable.insertRow(-1);
+		var highs = forecastTable.insertRow(-1);
+		var lows = forecastTable.insertRow(-1);
+		
+		for(const day of forecast){
+			var icon = document.createElement("img");
+			icon.src = day.weatherIcon;
+			icons.insertCell(-1).appendChild(icon);
+			dates.insertCell(-1).innerHTML = day.date.month + ", " + day.date.day;
+			highs.insertCell(-1).innerHTML = day.high + " " + day.tempUnit[0];
+			lows.insertCell(-1).innerHTML = day.low + " " + day.tempUnit[0];
+		}
+	}
+	
+	function fillCarousel(images){
+		for(var i = 0; i < images.length; i++){
+			var img = document.createElement("img");
+			img.src = images[i];
+			slides[i].innerHTML = "";
+			slides[i].appendChild(img);
+		}
+	}
+	
+	function displayCurrent(weather){
+		var locationName = weather.city + ", " + weather.country;
+		var temp = weather.currentTemp;
+		var desc = weather.weather;
+		
+		document.getElementById("date").innerHTML = (new Date()).toDateString()
+		document.getElementById("location").innerHTML = locationName;
+		document.getElementById("weather").innerHTML = temp;
+		document.getElementById("description").innerHTML = desc;
+		var img = document.getElementById("weatherIcon");
+		img.src = weather.weatherGraphicStatic;
+		img.onmouseover = setSrc(img, weather.weatherGraphicAnimate);
+		img.onmouseout = setSrc(img, weather.weatherGraphicStatic);
+	}
+	
+	function setSrc(img, src){
+		return function(){
+			img.src = src;
+		};
+	}
+	
+	function drawHistChart(histData) {
+		var entries = [['Months', 'Low Temperature', 'High Temperature']];
+		
+		for(month of histData){
+			entries.push([month.month, month.avgLow, month.avgHigh]);
+		}
+		
+        var data = google.visualization.arrayToDataTable(entries);
+
+        var options = {
+          title: 'Average Highs And Lows Of Previous Year',
+          curveType: 'function',
+          legend: { position: 'bottom' }
+        };
+
+        var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+
+        chart.draw(data, options);
+      }
+</script> 
+
+
+<!-- Image slide show script-->
+ <script>
+var slideIndex = 0;
+showSlides();
+
+function showSlides() {
+  var i;
+  var slides = document.getElementsByClassName("slide");
+  for (i = 0; i < slides.length; i++) {
+    slides[i].style.display = "none";  
+  }
+  slideIndex++;
+  if (slideIndex > slides.length) {slideIndex = 1}    
+  slides[slideIndex-1].style.display = "block";  
+  setTimeout(showSlides, 3000); // Change image every 3 seconds
+}
+</script>
+</body>
+</html>
